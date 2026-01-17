@@ -24,10 +24,8 @@ class Parser(DetailPageParser):
     async def actors(self, ctx, html: Selector) -> list[str]:
         # 只提取【紧跟】在 female 标志前面的那一个 a 标签
         # preceding-sibling::a[1] 表示离当前节点最近的上一个 a 兄弟节点
-        return (
-            html.xpath("//strong[contains(@class, 'female')]/preceding-sibling::a[1]/text()")
-            .getall()
-        )
+        return (html.xpath("//strong[contains(@class, 'female')]/preceding-sibling::a[1]/text()").getall()
+
     async def all_actors(self, ctx, html: Selector) -> list[str]:
         return (html.css("span:has(strong.female)") or html.css("span:has(strong.male)")).xpath("a/text()").getall()
 
