@@ -21,8 +21,8 @@ class Parser(DetailPageParser):
     async def originaltitle(self, ctx, html: Selector) -> str:
         return extract_text(html, 'string(//h2[@class="title is-4"]/span[@class="origin-title"])')
 
-    async def all_actors(self, ctx, html: Selector) -> list[str]:
-        return html.xpath('//strong[contains(text(),"演員:")]/../span/a/text()').getall()
+    async def actors(self, ctx, html: Selector) -> list[str]:
+        return html.xpath("//strong[contains(@class, 'female')]/preceding-sibling::a[1]/text()").getall()
 
     async def all_actors(self, ctx, html: Selector) -> list[str]:
         return (html.css("span:has(strong.female)") or html.css("span:has(strong.male)")).xpath("a/text()").getall()
