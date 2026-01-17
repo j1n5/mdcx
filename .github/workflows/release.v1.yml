@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "自定义版本标签"
+        description: "编译版本号 (例如 v2.0-fix)"
         required: true
         default: "v2.0-custom"
 
@@ -12,34 +12,46 @@ jobs:
   build-windows:
     runs-on: windows-latest
     permissions:
-      contents: write
+      contents: write # 必须赋予写权限才能发布 Release
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 获取完整代码和提交记录
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5 # 使用官方 uv 插件
+      - name: Setup uv (Modern Python Manager)
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
 
       - name: Set up Python 3.13
         run: uv python install 3.13
 
-      - name: Install dependencies
+      - name: Sync Dependencies
         run: |
-          uv sync # 自动识别 pyproject.toml 并安装所有依赖
+          # 自动读取 pyproject.toml 并安装所有需要的库
+          uv sync
+        shell: bash
 
-      - name: Build App
+      - name: Build Executable
         run: |
-          # 运行作者提供的构建脚本
+          # 使用 uv 环境运行根目录下的 build.py
           uv run python build.py
+        shell: bash
+
+      - name: Check Build Output
+        run: |
+          echo "Listing dist directory..."
+          ls -R dist/
         shell: bash
 
       - name: Upload to Release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/MDCx*.exe # 匹配 build.py 生成的 exe
+          file: dist/*.exe # 匹配 dist 文件夹下生成的任何 exe 文件
           tag: ${{ github.event.inputs.tag }}
           overwrite: true
           file_glob: true
+          body: "这是基于修改版代码自动生成的编译版本。"
