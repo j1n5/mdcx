@@ -22,13 +22,15 @@ class Parser(DetailPageParser):
         return extract_text(html, 'string(//h2[@class="title is-4"]/span[@class="origin-title"])')
 
     async def actors(self, ctx, html: Selector) -> list[str]:
-        # 只提取【紧跟】在 female 标志前面的那一个 a 标签
-        # preceding-sibling::a[1] 指当前节点上方最近的一个兄弟节点，从而过滤掉男演员
-        return html.xpath("//strong[contains(@class, 'female')]/preceding-sibling::a[1]/text()").getall()
+        # parsel css 不支持 :has() 中的多个选择器, 这是一个已知问题: https://github.com/scrapy/cssselect/issues/138
+        return (
+            html.css("span:has(strong.female)")
+            .xpath("//strong[contains(@class, 'female')]/preceding-sibling::a/text()")
+            .getall()
+        )
 
     async def all_actors(self, ctx, html: Selector) -> list[str]:
-        # 提取演員栏位对应的 span.value 下所有的 a 标签文字
-        return html.xpath('//strong[contains(text(),"演員:")]/../span/a/text()').getall()
+        return (html.css("span:has(strong.female)") or html.css("span:has(strong.male)")).xpath("a/text()").getall()
 
     async def studio(self, ctx, html: Selector) -> str:
         return extract_text(
@@ -109,7 +111,7 @@ class Parser(DetailPageParser):
 
     async def wanted(self, ctx, html: Selector) -> str:
         html_text = html.get()
-        result = re.search(r"(\d+)(人看過| have seen it", html_text)
+        result = re.search(r"(\d+)(人看過| have seen it)", html_text)
         return result.group(1) if result else ""
 
     async def image_cut(self, ctx, html: Selector) -> str:
